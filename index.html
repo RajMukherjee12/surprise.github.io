@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For You ❤</title>
+<style>
+  :root { --bg1:#2a0a1f; --bg2:#5a1237; --pink:#ff4d88; --text:#fff0f5; }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: radial-gradient(circle at 50% 30%, var(--bg2), var(--bg1));
+    color: var(--text); overflow:hidden;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .screen { display:none; flex-direction:column; align-items:center; gap:28px; padding:24px; z-index:2; }
+  .screen.active { display:flex; animation: fade 1s ease; }
+  @keyframes fade { from {opacity:0; transform:translateY(12px);} to {opacity:1; transform:none;} }
+  h1 { font-size: clamp(2rem, 7vw, 3.4rem); font-weight:normal; letter-spacing:1px; }
+  .line { font-size: clamp(1.2rem, 4.5vw, 1.8rem); min-height:2.4em; max-width:560px; line-height:1.5; }
+  button {
+    font-family:inherit; font-size:1.2rem; color:#fff; cursor:pointer;
+    background: linear-gradient(135deg,#ff4d88,#ff7aa8); border:none;
+    padding:14px 38px; border-radius:50px; box-shadow:0 8px 30px rgba(255,77,136,.5);
+    transition: transform .2s; animation: pulse 1.8s infinite;
+  }
+  button:hover { transform: scale(1.07); }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,77,136,.6);} 50%{box-shadow:0 0 0 16px rgba(255,77,136,0);} }
+  #next { display:none; }
+  #s2 { width:100%; max-width:640px; max-height:100vh; max-height:100dvh; overflow-y:auto; justify-content:flex-start; padding-top:32px; padding-bottom:32px; }
+  #s2 .line { font-size: clamp(1rem, 3.9vw, 1.35rem); min-height:0; width:100%; }
+  #s2 { max-width:900px; }
+  #hint { font-size:1.05rem; opacity:.85; }
+  #typed.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; width:100%; }
+  .card { perspective:900px; height:200px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .card-in { position:relative; width:100%; height:100%; transition:transform .8s; transform-style:preserve-3d; }
+  .card.flipped .card-in { transform:rotateY(180deg); }
+  .face { position:absolute; inset:0; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:14px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .front { background:linear-gradient(135deg,#ff4d88,#c2185b); font-size:2.6rem; gap:6px; }
+  .front small { font-size:.9rem; opacity:.9; }
+  .card:not(.flipped) .front { animation: pulse 2s infinite; }
+  .back { background:#fff0f5; color:#5a1237; transform:rotateY(180deg); font-size:clamp(.85rem,3.3vw,1rem); line-height:1.45; text-align:center; overflow:auto; }
+  canvas { max-width:100%; height:auto; }
+  #final { font-size: clamp(1.3rem,5vw,2rem); opacity:0; transition:opacity 2s; }
+  .pic { width:min(80vw,320px); aspect-ratio:1/1; object-fit:cover; border-radius:24px;
+    border:4px solid #ff7aa8; box-shadow:0 10px 40px rgba(255,77,136,.55); animation: fade 1.2s ease; background:#5a1237; }
+  .pic.broken { visibility:hidden; }
+  #next2 { display:none; }
+  #love { font-size: clamp(2.2rem, 9vw, 4rem); color:#ff7aa8; text-shadow:0 0 25px rgba(255,77,136,.8); animation: beat 1.4s infinite; }
+  @keyframes beat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+  .float { position:fixed; bottom:-40px; pointer-events:none; opacity:.55; animation: rise linear forwards; z-index:1; }
+  @keyframes rise { to { transform: translateY(-115vh) rotate(25deg); opacity:0; } }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="s1">
+  <h1>I have something for you…</h1>
+  <button id="startBtn">Start</button>
+</div>
+
+<div class="screen" id="s2">
+  <div id="hint">Tap every card to read it ❤</div>
+  <div class="cards" id="typed"></div>
+  <button id="next">Dekhbi ki ache amar mone? ❤</button>
+</div>
+
+<div class="screen" id="s3">
+  <canvas id="c"></canvas>
+  <div id="final"></div>
+  <button id="next2">Next ➜</button>
+</div>
+
+<div class="screen" id="s4">
+  <h1>R rege Thakis na please erom 🥺</h1>
+  <img class="pic" id="pic2" alt="">
+  <button id="next3">Next ➜</button>
+</div>
+
+<div class="screen" id="s5">
+  <h1>Hashi Khushi Thak erom 😊❤</h1>
+  <img class="pic" id="pic3" alt="">
+  <button id="next4">Next ➜</button>
+</div>
+
+<div class="screen" id="s6">
+  <h1 id="love">I love you so much, baby ❤</h1>
+</div>
+
+<script>
+/* ====== EDIT THESE ====== */
+const PHOTO = "photo.jpeg";            // upload her photo to the same folder with this name
+const SORRY_LINES = ["Amake khoma kore dis re… ❤️", "Toke koshto dewar kotha ami shopneo bhabte pari na but majhe majhe diye feli toke hariye felar bhoi.", "Jani, ami bhul korechi… kintu bishwas kor, toke ami harate chai na.", "Tui amar jiboner shobcheye shundor existence, amar hashi, amar shanti.", "Toke chokhe jol anar jonno noy, tor mukhe hashi anar jonnoi ami tor jibone eshechi.", "Rag kore thakis na, please… tor obhiman bhanganor jonno ami hajar bar sorry bolte pari.", "Tui amar kache shudhu ekjon manush noi, tui amar world.", "Ekbar shudhu kache aii… joriye dhore bolte chai, ami toke khub bhalobashi.", "Toke chara sob kichu thakleo amr kerom eka ekai lage.", "Please amake khoma kore dis… ami toke harate chai na, konodin na. ❤️🥺"];
+const PHOTO2 = "photo2.jpeg";          // photo shown under "Don't be sad anymore"
+const PHOTO3 = "photo1.jpeg";          // happy photo shown on the last page
+const HEART_TALL = 1.1;               // heart height compared to its width: 1 = normal, 1.1-1.2 = taller heart (more room for the face)
+const PHOTO_ZOOM = 1;                 // 1 = sides always filled (keep 1 so nothing shrinks from the sides)
+const PHOTO_TOP = 0;                  // 0 = show the top of the photo (crop from bottom), 0.5 = centre, 1 = show the bottom
+const AUTO_FLIP = false;             // false = she taps each card | true = cards flip by themselves one after another
+const FINAL_TEXT = "You are always in my heart ❤";
+/* ======================== */
+
+const $ = id => document.getElementById(id);
+const show = id => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); $(id).classList.add('active'); };
+
+// floating hearts background
+setInterval(() => {
+  const h = document.createElement('div');
+  h.className = 'float'; h.textContent = ['❤','💗','💖'][Math.random()*3|0];
+  h.style.left = Math.random()*100 + 'vw';
+  h.style.fontSize = (14 + Math.random()*26) + 'px';
+  h.style.animationDuration = (6 + Math.random()*6) + 's';
+  document.body.appendChild(h);
+  setTimeout(() => h.remove(), 12000);
+}, 450);
+
+// typewriter
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function typeLines() {
+  const box = $('typed'); box.innerHTML = '';
+  let flipped = 0;
+  const done = () => {
+    if (++flipped < SORRY_LINES.length) return;
+    $('hint').textContent = '❤';
+    setTimeout(() => { $('next').style.display = 'inline-block'; $('s2').scrollTop = $('s2').scrollHeight; }, 900);
+  };
+  const cards = SORRY_LINES.map((line, i) => {
+    const c = document.createElement('div'); c.className = 'card';
+    c.innerHTML = '<div class="card-in"><div class="face front">❤<small>' + (i + 1) + '</small></div><div class="face back"></div></div>';
+    c.querySelector('.back').textContent = line;
+    const flip = () => { if (c.classList.contains('flipped')) return; c.classList.add('flipped'); done(); };
+    c.onclick = flip; c.flip = flip;
+    box.appendChild(c); return c;
+  });
+  if (AUTO_FLIP) { $('hint').textContent = ''; for (const c of cards) { await sleep(1800); c.flip(); c.scrollIntoView({behavior:'smooth', block:'center'}); } }
+}
+
+$('startBtn').onclick = () => { show('s2'); typeLines(); };
+$('next').onclick = () => { show('s3'); drawHeart(); };
+$('pic2').src = PHOTO2; $('pic3').src = PHOTO3;
+['pic2','pic3'].forEach(i => $(i).onerror = () => $(i).classList.add('broken'));
+$('next2').onclick = () => show('s4');
+$('next3').onclick = () => show('s5');
+$('next4').onclick = () => {
+  show('s6');
+  for (let i = 0; i < 40; i++) setTimeout(() => {   // burst of hearts
+    const h = document.createElement('div');
+    h.className = 'float'; h.textContent = ['❤','💗','💖','💕'][Math.random()*4|0];
+    h.style.left = Math.random()*100 + 'vw'; h.style.fontSize = (20 + Math.random()*36) + 'px';
+    h.style.animationDuration = (4 + Math.random()*5) + 's'; h.style.opacity = .85;
+    document.body.appendChild(h); setTimeout(() => h.remove(), 10000);
+  }, i * 120);
+};
+
+// heart drawing + photo reveal
+function drawHeart() {
+  const size = Math.max(280, Math.min(window.innerWidth - 16, (window.innerHeight - 150) / HEART_TALL, 720));
+  const H = Math.round(size * HEART_TALL);
+  const cv = $('c'), ctx = cv.getContext('2d');
+  cv.width = size; cv.height = H;
+  const s = size / 32.6, sy = s * HEART_TALL, cx = size / 2, cy = H / 2 - 2.2 * sy;
+  const bx = cx - 16*s, by = cy - 12.7*sy, bw = 32*s, bh = 29.7*sy; // heart bounding box
+  const pt = t => [cx + 16*Math.pow(Math.sin(t),3)*s,
+                   cy - (13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t))*sy];
+  const path = (to = Math.PI*2) => {
+    ctx.beginPath();
+    for (let t = 0; t <= to; t += 0.02) { const [x,y] = pt(t); t === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }
+  };
+
+  const img = new Image();
+  let ready = false;
+  img.onload = () => ready = true;
+  img.onerror = () => ready = false;
+  img.src = PHOTO;
+
+  // Phase 1: draw the outline
+  let t = 0;
+  function outline() {
+    t += 0.05;
+    path(Math.min(t, Math.PI*2));
+    ctx.strokeStyle = '#ff4d88'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#ff4d88'; ctx.shadowBlur = 18;
+    ctx.stroke();
+    if (t < Math.PI*2) requestAnimationFrame(outline); else reveal();
+  }
+
+  // Phase 2: the photo is "drawn" inside the heart (pencil sketch first, then colour)
+  function reveal() {
+    ctx.shadowBlur = 0;
+    ctx.save(); path();
+    const g = ctx.createLinearGradient(0, by, 0, by + bh);
+    g.addColorStop(0, '#3a0f2a'); g.addColorStop(1, '#1d0615');
+    ctx.fillStyle = g; ctx.fill(); ctx.restore();
+
+    // photo cropped to fill the whole heart box
+    const off = document.createElement('canvas'); off.width = size; off.height = H;
+    const o = off.getContext('2d');
+    if (ready) {
+      const sc = Math.max(bw/img.width, bh/img.height) * PHOTO_ZOOM;
+      o.drawImage(img, bx + (bw - img.width*sc)/2, by + (bh - img.height*sc)*PHOTO_TOP, img.width*sc, img.height*sc);
+    } else { o.fillStyle = '#ff4d88'; o.fillRect(0, 0, size, H); }
+
+    // pencil-sketch version (edge detection)
+    let sketch = null;
+    if (ready) {
+      try {
+        const d = o.getImageData(0, 0, size, H).data, W = size;
+        const gr = new Float32Array(W*H);
+        for (let k = 0; k < W*H; k++) gr[k] = .3*d[k*4] + .59*d[k*4+1] + .11*d[k*4+2];
+        sketch = document.createElement('canvas'); sketch.width = size; sketch.height = H;
+        const sc2 = sketch.getContext('2d'), out = sc2.createImageData(W, H);
+        for (let y = 1; y < H-1; y++) for (let x = 1; x < W-1; x++) {
+          const i2 = y*W + x;
+          const gx = -gr[i2-W-1] - 2*gr[i2-1] - gr[i2+W-1] + gr[i2-W+1] + 2*gr[i2+1] + gr[i2+W+1];
+          const gy = -gr[i2-W-1] - 2*gr[i2-W] - gr[i2-W+1] + gr[i2+W-1] + 2*gr[i2+W] + gr[i2+W+1];
+          const m = Math.min(255, Math.hypot(gx, gy) * 1.6), q = i2*4;
+          out.data[q] = 255; out.data[q+1] = 205; out.data[q+2] = 225; out.data[q+3] = m;
+        }
+        sc2.putImageData(out, 0, 0);
+      } catch (e) { sketch = null; }
+    }
+
+    // tiles are drawn roughly top-to-bottom, with a hand-drawn jitter
+    const N = 40, tw = size / N, order = [];
+    for (let r = 0; r < Math.ceil(H / tw); r++) for (let c = 0; c < N; c++) order.push({ x: c*tw, y: r*tw, k: r + Math.random()*6 });
+    order.sort((a, b) => a.k - b.k);
+
+    function run(src, dur, done) {
+      const start = performance.now(); let drawn = 0;
+      (function frame(now) {
+        const p = Math.min(1, (now - start) / dur), target = Math.floor(p * order.length);
+        ctx.save(); path(); ctx.clip();
+        for (; drawn < target; drawn++) { const t = order[drawn]; ctx.drawImage(src, t.x, t.y, tw+1, tw+1, t.x, t.y, tw+1, tw+1); }
+        ctx.restore();
+        p < 1 ? requestAnimationFrame(frame) : done();
+      })(start);
+    }
+    sketch ? run(sketch, 3200, () => run(off, 3200, finish)) : run(off, 4500, finish);
+  }
+
+  function finish() {
+    path(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#ff4d88'; ctx.shadowBlur = 20; ctx.stroke();
+    cv.style.animation = 'pulse 1.6s infinite';
+    const f = $('final'); f.textContent = FINAL_TEXT;
+    setTimeout(() => f.style.opacity = 1, 200);
+    setTimeout(() => $('next2').style.display = 'inline-block', 2200);
+  }
+  outline();
+}
+</script>
+</body>
+</html>
