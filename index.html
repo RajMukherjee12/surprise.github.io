@@ -154,6 +154,11 @@ $('next4').onclick = () => {
   }, i * 120);
 };
 
+// preload the heart photo right away, so it is ready before the drawing starts
+const heroImg = new Image();
+const heroLoaded = new Promise(res => { heroImg.onload = () => res(true); heroImg.onerror = () => { console.warn('Photo not found: ' + PHOTO + ' (check the file name, it is case-sensitive)'); res(false); }; });
+heroImg.src = PHOTO;
+
 // heart drawing + photo reveal
 function drawHeart() {
   const size = Math.max(280, Math.min(window.innerWidth - 16, (window.innerHeight - 150) / HEART_TALL, 720));
@@ -169,11 +174,8 @@ function drawHeart() {
     for (let t = 0; t <= to; t += 0.02) { const [x,y] = pt(t); t === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }
   };
 
-  const img = new Image();
+  const img = heroImg;
   let ready = false;
-  img.onload = () => ready = true;
-  img.onerror = () => ready = false;
-  img.src = PHOTO;
 
   // Phase 1: draw the outline
   let t = 0;
@@ -187,11 +189,12 @@ function drawHeart() {
   }
 
   // Phase 2: the photo is "drawn" inside the heart (pencil sketch first, then colour)
-  function reveal() {
+  async function reveal() {
+    ready = await Promise.race([heroLoaded, sleep(12000).then(() => false)]);   // wait until the photo is really loaded
     ctx.shadowBlur = 0;
     ctx.save(); path();
     const g = ctx.createLinearGradient(0, by, 0, by + bh);
-    g.addColorStop(0, '#3a0f2a'); g.addColorStop(1, '#1d0615');
+    g.addColorStop(0, ready ? '#fff6f9' : '#3a0f2a'); g.addColorStop(1, ready ? '#ffe0ea' : '#1d0615');
     ctx.fillStyle = g; ctx.fill(); ctx.restore();
 
     // photo cropped to fill the whole heart box
@@ -215,8 +218,8 @@ function drawHeart() {
           const i2 = y*W + x;
           const gx = -gr[i2-W-1] - 2*gr[i2-1] - gr[i2+W-1] + gr[i2-W+1] + 2*gr[i2+1] + gr[i2+W+1];
           const gy = -gr[i2-W-1] - 2*gr[i2-W] - gr[i2-W+1] + gr[i2+W-1] + 2*gr[i2+W] + gr[i2+W+1];
-          const m = Math.min(255, Math.hypot(gx, gy) * 1.6), q = i2*4;
-          out.data[q] = 255; out.data[q+1] = 205; out.data[q+2] = 225; out.data[q+3] = m;
+          const m = Math.min(255, Math.hypot(gx, gy) * 3.2), q = i2*4;
+          out.data[q] = 110; out.data[q+1] = 25; out.data[q+2] = 65; out.data[q+3] = m;
         }
         sc2.putImageData(out, 0, 0);
       } catch (e) { sketch = null; }
@@ -237,7 +240,7 @@ function drawHeart() {
         p < 1 ? requestAnimationFrame(frame) : done();
       })(start);
     }
-    sketch ? run(sketch, 3200, () => run(off, 3200, finish)) : run(off, 4500, finish);
+    sketch ? run(sketch, 3800, () => run(off, 3200, finish)) : run(off, 4500, finish);
   }
 
   function finish() {
