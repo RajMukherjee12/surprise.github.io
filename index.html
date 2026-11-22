@@ -47,8 +47,12 @@
   .pic { width:min(80vw,320px); aspect-ratio:1/1; object-fit:cover; border-radius:24px;
     border:4px solid #ff7aa8; box-shadow:0 10px 40px rgba(255,77,136,.55); animation: fade 1.2s ease; background:#5a1237; }
   .pic.broken { visibility:hidden; }
+  .pic.big { height:min(60vh,60dvh,600px); width:auto; max-width:92vw; aspect-ratio:4/5; border-radius:28px; border-width:5px; }
+  #s6 { gap:18px; overflow:hidden; }
+  .screen { scrollbar-width:none; -ms-overflow-style:none; }
+  .screen::-webkit-scrollbar { display:none; }
   #next2 { display:none; }
-  #love { font-size: clamp(2.2rem, 9vw, 4rem); color:#ff7aa8; text-shadow:0 0 25px rgba(255,77,136,.8); animation: beat 1.4s infinite; }
+  #love { font-size: clamp(1.8rem, 7.5vw, 3.2rem); color:#ff7aa8; text-shadow:0 0 25px rgba(255,77,136,.8); animation: beat 1.4s infinite; }
   @keyframes beat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
   .float { position:fixed; bottom:-40px; pointer-events:none; opacity:.55; animation: rise linear forwards; z-index:1; }
   @keyframes rise { to { transform: translateY(-115vh) rotate(25deg); opacity:0; } }
@@ -87,6 +91,7 @@
 
 <div class="screen" id="s6">
   <h1 id="love">I love you so much, baby ❤</h1>
+  <img class="pic big" id="pic4" alt="">
 </div>
 
 <script>
@@ -99,6 +104,7 @@ const HEART_TALL = 1.1;               // heart height compared to its width: 1 =
 const PHOTO_ZOOM = 1;                 // 1 = sides always filled (keep 1 so nothing shrinks from the sides)
 const PHOTO_TOP = 0;                  // 0 = show the top of the photo (crop from bottom), 0.5 = centre, 1 = show the bottom
 const AUTO_FLIP = false;             // false = she taps each card | true = cards flip by themselves one after another
+const PHOTO4 = "photo4.jpeg";          // BIG photo on the last "I love you" page (if missing, photo1.jpeg is used)
 const FINAL_TEXT = "You are always in my heart ❤";
 /* ======================== */
 
@@ -141,6 +147,8 @@ $('startBtn').onclick = () => { show('s2'); typeLines(); };
 $('next').onclick = () => { show('s3'); drawHeart(); };
 $('pic2').src = PHOTO2; $('pic3').src = PHOTO3;
 ['pic2','pic3'].forEach(i => $(i).onerror = () => $(i).classList.add('broken'));
+$('pic4').src = PHOTO4;
+$('pic4').onerror = () => { const e = $('pic4'); if (!e.dataset.retry) { e.dataset.retry = 1; e.src = PHOTO3; } else e.classList.add('broken'); };
 $('next2').onclick = () => show('s4');
 $('next3').onclick = () => show('s5');
 $('next4').onclick = () => {
